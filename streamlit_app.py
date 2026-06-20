@@ -93,6 +93,43 @@ st.markdown(
             border: 1px solid #bae6fd;
         }
 
+        div[data-testid="stButton"] > button {
+            min-height: 48px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: .95rem;
+            border: 1px solid #cbd5e1;
+            background: #ffffffd9;
+            color: #1e3a8a;
+        }
+
+        div[data-testid="stButton"] > button:hover {
+            border-color: #2563eb;
+            color: #1d4ed8;
+            background: #eff6ff;
+        }
+
+        .node-info-card {
+            padding: 1.15rem 1.25rem;
+            border-radius: 20px;
+            background: #ffffffea;
+            border: 1px solid #dbeafe;
+            box-shadow: 0 10px 25px rgba(30, 58, 138, 0.06);
+            min-height: 390px;
+        }
+
+        .tool-pill {
+            display: inline-block;
+            padding: .45rem .75rem;
+            margin: .22rem .20rem .22rem 0;
+            border-radius: 999px;
+            background: #e0f2fe;
+            color: #0369a1;
+            font-weight: 800;
+            font-size: .86rem;
+            border: 1px solid #bae6fd;
+        }
+
         h1, h2, h3, h4, h5 {
             color: #1e3a8a;
         }
@@ -212,6 +249,39 @@ MAPA_AREAS = {
     },
 }
 
+MAPA_RELACIONES = {
+    "📊 Dirección / Gerencia": [
+        "Recibe información consolidada desde Finanzas y Control de Gestión.",
+        "Define prioridades para Comercial, Compras y Operaciones.",
+        "Equilibra crecimiento, liquidez, inventario y rentabilidad."
+    ],
+    "💰 Finanzas": [
+        "Recibe datos de ventas, compras, sueldos, inventario y costos.",
+        "Entrega límites presupuestarios y alertas de liquidez.",
+        "Valida si las decisiones comerciales y operativas son sostenibles."
+    ],
+    "📈 Comercial / Ventas": [
+        "Detecta necesidades del mercado y genera ingresos.",
+        "Entrega proyecciones de demanda a Compras y Operaciones.",
+        "Depende del stock disponible y de precios construidos con costos reales."
+    ],
+    "📦 Compras y Abastecimiento": [
+        "Transforma la demanda esperada en órdenes de compra o importaciones.",
+        "Coordina con Bodega la recepción y disponibilidad de productos.",
+        "Impacta directamente la caja, el costo unitario y el nivel de servicio."
+    ],
+    "⚙️ Operaciones y Bodega": [
+        "Controla el flujo físico: recepción, almacenamiento, kardex y despacho.",
+        "Informa quiebres, sobrestock y diferencias entre sistema y stock físico.",
+        "Sostiene la promesa comercial y alimenta el costeo financiero."
+    ],
+    "🚦 Control de Gestión": [
+        "Integra indicadores de ventas, inventario, costos, caja y resultados.",
+        "Detecta desviaciones entre lo planificado y lo real.",
+        "Convierte los datos en alertas y reportes para la gerencia."
+    ],
+}
+
 AREAS_RESUMEN = {
     "🛒 Comercial": {
         "pasos": [
@@ -242,25 +312,43 @@ AREAS_RESUMEN = {
     }
 }
 
-def render_relational_graph(selected_area: str):
-    node_lines = []
-    for area, meta in MAPA_AREAS.items():
-        selected = area == selected_area
-        style = '"rounded,filled,bold"' if selected else '"rounded,filled"'
-        fillcolor = meta['color'] if selected else '#f8fafc'
-        fontcolor = 'white' if selected else '#1e293b'
-        penwidth = '2.4' if selected else '1.1'
-        node_lines.append(
-            f'"{area}" [shape=box style={style} fillcolor="{fillcolor}" fontcolor="{fontcolor}" color="{meta["color"]}" penwidth={penwidth}];'
-        )
-    edge_lines = []
-    for dest in MAPA_AREAS[selected_area]['conecta']:
-        edge_lines.append(
-            f'"{selected_area}" -> "{dest}" [color="{MAPA_AREAS[selected_area]["color"]}" penwidth=2.1 arrowsize=0.8];'
-        )
-    dot = "digraph G {\nrankdir=LR;\nnode [fontname=Helvetica fontsize=11 margin=0.18];\n" + "\n".join(node_lines + edge_lines) + "\n}"
-    st.graphviz_chart(dot, use_container_width=True)
+def render_node_selector_and_info():
+    if "nodo_activo" not in st.session_state:
+        st.session_state.nodo_activo = "📊 Dirección / Gerencia"
 
+    col_nodos, col_info = st.columns([0.85, 1.65])
+
+    with col_nodos:
+        st.markdown("#### Selecciona un nodo corporativo")
+        for area in MAPA_AREAS.keys():
+            activo = area == st.session_state.nodo_activo
+            etiqueta = f"✅ {area}" if activo else area
+            if st.button(etiqueta, use_container_width=True, key=f"btn_{area}"):
+                st.session_state.nodo_activo = area
+                st.rerun()
+
+    with col_info:
+        area = st.session_state.nodo_activo
+        meta = MAPA_AREAS[area]
+        relaciones = MAPA_RELACIONES.get(area, [])
+
+        decisiones_html = "".join([f"<li>{decision}</li>" for decision in meta["decisiones"]])
+        relaciones_html = "".join([f"<li>{relacion}</li>" for relacion in relaciones])
+
+        st.markdown(
+            f"""
+            <div class="node-info-card" style="border-left: 7px solid {meta['color']};">
+                <h3 style="margin-top:0; color:{meta['color']};">{meta['titulo']}</h3>
+                <p><b>Rol principal:</b> {meta['rol']}</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: .9rem 0;">
+                <h4>🧠 Decisiones que toma</h4>
+                <ul>{decisiones_html}</ul>
+                <h4>🔗 Cómo se conecta con el sistema</h4>
+                <ul>{relaciones_html}</ul>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 def render_step_block(area_key: str):
     resumen = AREAS_RESUMEN[area_key]
@@ -273,10 +361,11 @@ def render_step_block(area_key: str):
             unsafe_allow_html=True
         )
     with cols[1]:
-        st.markdown("<div class='soft-card' style='min-height:220px;'><h4>🧰 Herramientas útiles</h4>", unsafe_allow_html=True)
-        for h in resumen['herramientas']:
-            concepto(h)
-        st.markdown("</div>", unsafe_allow_html=True)
+        herramientas_html = "".join([f"<span class='tool-pill'>{h}</span>" for h in resumen['herramientas']])
+        st.markdown(
+            f"<div class='soft-card' style='min-height:220px;'><h4>🧰 Herramientas útiles</h4><div style='margin-top:1rem;'>{herramientas_html}</div></div>",
+            unsafe_allow_html=True
+        )
 
 # BANNER PRINCIPAL CON DISEÑO SOBRIO
 hero(
@@ -324,36 +413,10 @@ with tab1:
         )
         
 
-        # --- MAPA CONCEPTUAL INTERACTIVO CONSTRUIDO EN CÓDIGO ---
+        # --- MAPA CONCEPTUAL INTERACTIVO SIN ESQUEMA GRÁFICO ---
         st.markdown("### 🗺️ Mapa del Ecosistema Empresarial")
-        st.caption("Seleccione un nodo del sistema para ver su rol principal, las decisiones que toma y sus conexiones con las demás áreas.")
-
-        area_seleccionada = st.pills(
-            "Selecciona un nodo corporativo:",
-            list(MAPA_AREAS.keys()),
-            selection_mode="single",
-            default="📊 Dirección / Gerencia"
-        )
-
-        meta = MAPA_AREAS[area_seleccionada]
-        st.markdown(
-            f"<div class='mini-card' style='border-left: 6px solid {meta['color']}; background-color: #f8fafc; margin-bottom: .8rem;'><h4 style='margin-bottom:.45rem;'>{meta['titulo']}</h4><p><b>Rol principal:</b> {meta['rol']}</p></div>",
-            unsafe_allow_html=True
-        )
-
-        c_map_1, c_map_2 = st.columns([1.05, 1])
-        with c_map_1:
-            st.markdown("#### 🔗 Relaciones del nodo")
-            render_relational_graph(area_seleccionada)
-        with c_map_2:
-            st.markdown("#### 🧠 Decisiones que toma")
-            for i, decision in enumerate(meta["decisiones"], start=1):
-                st.markdown(
-                    f"<div class='mini-card' style='min-height: 88px; border-left: 5px solid {meta['color']}; background-color: #ffffff;'><b>Decisión {i}</b><br>{decision}</div>",
-                    unsafe_allow_html=True
-                )
-
-        st.markdown(f"**Áreas con las que se conecta directamente:** {', '.join(meta['conecta'])}")
+        st.caption("Selecciona un nodo corporativo. La información detallada aparecerá a la derecha.")
+        render_node_selector_and_info()
 
     with col_der:
         st.subheader("⚙️ Funciones Básicas del Administrador")

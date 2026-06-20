@@ -290,7 +290,7 @@ AREAS_RESUMEN = {
             "Definir cobertura, propuestas y canal de atención.",
             "Asignar vendedores y medir resultados comerciales."
         ],
-        "herramientas": ["Excel", "Tablas dinámicas", "Segmentación", "Indicadores comerciales", "IA", "Dashboards"]
+        "herramientas": ["Excel", "Tablas dinámicas", "Segmentación", "Indicadores comerciales", "Dashboards"]
     },
     "📦 Operaciones": {
         "pasos": [
